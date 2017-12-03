@@ -6,6 +6,7 @@ import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.provider.ContactsContract;
 import android.provider.Settings;
 import android.speech.RecognizerIntent;
 import android.support.v4.app.ActivityCompat;
@@ -26,10 +27,17 @@ public class IntentManager {
     public static final int ALL_PERMISSIONS_RESULT = 101;
     public static final int REQ_SETTINGS_LOCATION = 102;
     public static final int REQ_PERMISSION_LOCATION = 103;
+    public static final int REQ_PERMISSION_CONTACTS = 105;
+    public static final int RESULT_ACTION_PICK = 104;
 
     public void callIntent(Context mContext, String phoneNumber) {
         Intent phoneIntent = new Intent(Intent.ACTION_DIAL, Uri.fromParts("tel", phoneNumber, null));
         mContext.startActivity(phoneIntent);
+    }
+
+    public void pickContent(Activity mActivity) {
+        Intent i = new Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI);
+        mActivity.startActivityForResult(i, RESULT_ACTION_PICK);
     }
 
     public void goToEmail(Context mContext) {
@@ -62,18 +70,36 @@ public class IntentManager {
         }
     }
 
-    public void openAppDetails(Context mContext) {
+    public void openAppDetails(Context mContext, int permissionType) {
         Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
         intent.addCategory(Intent.CATEGORY_DEFAULT);
         intent.setData(Uri.parse("package:" + mContext.getPackageName()));
         Activity mActivity = (Activity) mContext;
-        mActivity.startActivityForResult(intent, IntentManager.REQ_PERMISSION_LOCATION);
+        switch (permissionType) {
+            case REQ_PERMISSION_LOCATION:
+                mActivity.startActivityForResult(intent, REQ_PERMISSION_LOCATION);
+                break;
+            case REQ_PERMISSION_CONTACTS:
+                mActivity.startActivityForResult(intent, REQ_PERMISSION_CONTACTS);
+                break;
+        }
     }
 
-    public void requestPermissions(Activity mActivity, List<String> listPermissions) {
-        ActivityCompat.requestPermissions(mActivity,
-                listPermissions.toArray(new String[listPermissions.size()]),
-                ALL_PERMISSIONS_RESULT);
+    public void requestPermissions(Activity mActivity, List<String> listPermissions, int requestType) {
+        switch (requestType) {
+            case REQ_PERMISSION_LOCATION:
+                PrefUtils.setSharedPreference(mActivity, PrefUtils.FIRST_TIME_LOCATION_PERMISSION, false);
+                ActivityCompat.requestPermissions(mActivity,
+                        listPermissions.toArray(new String[listPermissions.size()]),
+                        REQ_PERMISSION_LOCATION);
+                break;
+            case REQ_PERMISSION_CONTACTS:
+                PrefUtils.setSharedPreference(mActivity, PrefUtils.FIRST_TIME_CONTACTS_PERMISSION, false);
+                ActivityCompat.requestPermissions(mActivity,
+                        listPermissions.toArray(new String[listPermissions.size()]),
+                        REQ_PERMISSION_CONTACTS);
+                break;
+        }
 
     }
 
@@ -81,6 +107,12 @@ public class IntentManager {
         Intent intent = new Intent(Intent.ACTION_WEB_SEARCH);
         intent.putExtra(SearchManager.QUERY, query);
         mContext.startActivity(intent);
+    }
+
+    public void openMapWithCurrentLocation(Context mContext, String addressValue) {
+        String map = "http://maps.google.co.in/maps?q=" + addressValue;
+        Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(map));
+        mContext.startActivity(i);
     }
 
     public void openMaps(Context mContext, String address) {

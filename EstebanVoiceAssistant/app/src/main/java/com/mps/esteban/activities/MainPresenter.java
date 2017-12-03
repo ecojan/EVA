@@ -6,16 +6,20 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.provider.ContactsContract;
 import android.speech.RecognizerIntent;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.view.View;
 
@@ -25,6 +29,7 @@ import com.google.android.gms.location.LocationServices;
 import com.mps.esteban.application.MyApplication;
 import com.mps.esteban.mvp.BasePresenter;
 import com.mps.esteban.utils.IntentManager;
+import com.mps.esteban.utils.PrefUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -39,7 +44,6 @@ import javax.inject.Inject;
 
 public class MainPresenter extends BasePresenter<Contract.ContractView> implements Contract.ContractPresenter, LocationListener  {
 
-    @Inject IntentManager intentManager;
     @Inject Handler handler;
 
     private LocationRequest gmsRequest;
@@ -93,7 +97,7 @@ public class MainPresenter extends BasePresenter<Contract.ContractView> implemen
 
         googleApiClient.connect();
         getView().changeAddressVisibility(View.VISIBLE);
-        checkAndAskPermissions();
+        checkAndAskPermissionsForLocation();
     }
 
     @Override
@@ -114,7 +118,7 @@ public class MainPresenter extends BasePresenter<Contract.ContractView> implemen
     @Override
     public void processRequestedPermissions(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         switch (requestCode) {
-            case IntentManager.ALL_PERMISSIONS_RESULT:
+            case IntentManager.REQ_PERMISSION_LOCATION:
                 permissionGranted = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
                 if (permissionGranted) {
                     if (providerIsEnabled) {
@@ -122,6 +126,14 @@ public class MainPresenter extends BasePresenter<Contract.ContractView> implemen
                     } else {
                         getView().showSettingsAlert();
                     }
+                }
+                break;
+            case IntentManager.REQ_PERMISSION_CONTACTS:
+                permissionGranted = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
+                if (permissionGranted) {
+                    getView().callCommand();
+                } else {
+                    askForCallIntent();
                 }
                 break;
         }
@@ -141,16 +153,12 @@ public class MainPresenter extends BasePresenter<Contract.ContractView> implemen
                     //TODO result.get(0) = what the user says (e.g. "Open Camera")
                     //TODO Split it and handle each word to do a certain action
 
-                    if (result.get(0).equals("give me my location")) {
-                        askForLocation();
-                    } else {
-                        intentManager.searchOnGoogle(getView().getContext(), result.get(0));
-                    }
+                    getView().processCommand(result.get(0));
                 }
                 break;
             }
             case IntentManager.REQ_PERMISSION_LOCATION:
-                if (isPermissionGranted()) {
+                if (isPermissionGranted(IntentManager.REQ_PERMISSION_LOCATION)) {
                     permissionGranted = true;
                     if (providerIsEnabled) {
                         permissionGrantedFlow();
@@ -159,13 +167,25 @@ public class MainPresenter extends BasePresenter<Contract.ContractView> implemen
                     }
                 }
                 break;
+            case IntentManager.REQ_PERMISSION_CONTACTS:
+                if (isPermissionGranted(IntentManager.REQ_PERMISSION_CONTACTS)) {
+                    getView().callCommand();
+                } else {
+                    askForCallIntent();
+                }
+                break;
             case IntentManager.REQ_SETTINGS_LOCATION:
-                if (isPermissionGranted()
+                if (isPermissionGranted(IntentManager.REQ_PERMISSION_LOCATION)
                         && geoLocationService.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
                     providerIsEnabled = true;
                     permissionGrantedFlow();
                 } else {
                     getView().showSettingsAlert();
+                }
+                break;
+            case IntentManager.RESULT_ACTION_PICK:
+                if (resultCode == Activity.RESULT_OK) {
+                    getNumber(getView().getContext(), data.getData());
                 }
                 break;
         }
@@ -197,13 +217,37 @@ public class MainPresenter extends BasePresenter<Contract.ContractView> implemen
         }
     }
 
+    @Override
+    public void askForCallIntent() {
+        int hasReadContactsPermission = ContextCompat.checkSelfPermission(getView().getContext(), Manifest.permission.READ_CONTACTS);
+        int hasCallPhonePermission = ContextCompat.checkSelfPermission(getView().getContext(), Manifest.permission.CALL_PHONE);
+
+        List<String> listOfPermissions = new ArrayList<String>();
+
+        if (hasReadContactsPermission != PackageManager.PERMISSION_GRANTED) {
+            listOfPermissions.add(Manifest.permission.READ_CONTACTS);
+        }
+
+        if (hasCallPhonePermission != PackageManager.PERMISSION_GRANTED) {
+            listOfPermissions.add(Manifest.permission.CALL_PHONE);
+        }
+
+        if (!listOfPermissions.isEmpty()) {
+            getView().showPermissionsAlert(IntentManager.REQ_PERMISSION_CONTACTS, listOfPermissions);
+        } else {
+            getView().callCommand();
+        }
+
+//        ActivityCompat.requestPermissions(activity, new String[]{Manifest.permission.READ_CONTACTS}, resultValue);
+    }
+
     private void locationChanged(Location location) {
         if (!disabledProviders.equals("gps") && location != null) {
-            getAddress(location.getLatitude(), location.getLongitude());
+            getAddress(getView().getContext(), location.getLatitude(), location.getLongitude());
         }
     }
 
-    public void checkAndAskPermissions() {
+    private void checkAndAskPermissionsForLocation() {
         int hasFineLocationPermission = ContextCompat.checkSelfPermission(getView().getContext(), Manifest.permission.ACCESS_FINE_LOCATION);
         int hasCoarseLocation = ContextCompat.checkSelfPermission(getView().getContext(), Manifest.permission.ACCESS_COARSE_LOCATION);
 
@@ -219,7 +263,7 @@ public class MainPresenter extends BasePresenter<Contract.ContractView> implemen
 
         if (!listOfPermissions.isEmpty()) {
             permissionGranted = false;
-            getView().showPermissionsAlert(listOfPermissions);
+            getView().showPermissionsAlert(IntentManager.REQ_PERMISSION_LOCATION, listOfPermissions);
         } else {
             permissionGranted = true;
 
@@ -235,31 +279,83 @@ public class MainPresenter extends BasePresenter<Contract.ContractView> implemen
         }
     }
 
-    private boolean isPermissionGranted() {
-        int hasFineLocationPermission = ContextCompat.checkSelfPermission(getView().getContext(), Manifest.permission.ACCESS_FINE_LOCATION);
-        int hasCoarseLocation = ContextCompat.checkSelfPermission(getView().getContext(), Manifest.permission.ACCESS_COARSE_LOCATION);
+    private boolean isPermissionGranted(int requestType) {
 
         List<String> listOfPermissions = new ArrayList<>();
 
-        if (hasFineLocationPermission != PackageManager.PERMISSION_GRANTED) {
-            listOfPermissions.add(Manifest.permission.ACCESS_FINE_LOCATION);
-        }
+        switch (requestType) {
+            case IntentManager.REQ_PERMISSION_LOCATION:
+                int hasFineLocationPermission = ContextCompat.checkSelfPermission(getView().getContext(), Manifest.permission.ACCESS_FINE_LOCATION);
+                int hasCoarseLocation = ContextCompat.checkSelfPermission(getView().getContext(), Manifest.permission.ACCESS_COARSE_LOCATION);
 
-        if (hasCoarseLocation != PackageManager.PERMISSION_GRANTED) {
-            listOfPermissions.add(Manifest.permission.ACCESS_COARSE_LOCATION);
+                if (hasFineLocationPermission != PackageManager.PERMISSION_GRANTED) {
+                    listOfPermissions.add(Manifest.permission.ACCESS_FINE_LOCATION);
+                }
+
+                if (hasCoarseLocation != PackageManager.PERMISSION_GRANTED) {
+                    listOfPermissions.add(Manifest.permission.ACCESS_COARSE_LOCATION);
+                }
+                break;
+            case IntentManager.REQ_PERMISSION_CONTACTS:
+                int hasReadContactsPermission = ContextCompat.checkSelfPermission(getView().getContext(), Manifest.permission.READ_CONTACTS);
+                int hasCallPhonePermission = ContextCompat.checkSelfPermission(getView().getContext(), Manifest.permission.CALL_PHONE);
+
+                if (hasReadContactsPermission != PackageManager.PERMISSION_GRANTED) {
+                    listOfPermissions.add(Manifest.permission.READ_CONTACTS);
+                }
+
+                if (hasCallPhonePermission != PackageManager.PERMISSION_GRANTED) {
+                    listOfPermissions.add(Manifest.permission.CALL_PHONE);
+                }
+                break;
         }
 
         return listOfPermissions.isEmpty();
     }
 
-    private void getAddress(final double lat, final double lon) {
+    private void getNumber(final Context mContext, final Uri contactUri) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+
+                Cursor s = mContext.getContentResolver().query(contactUri, null,
+                        null, null, null);
+
+                if (s != null && s.moveToFirst()) {
+
+                    String id = s.getString(s.getColumnIndexOrThrow(ContactsContract.Contacts._ID));
+                    String hasPhone = s.getString(s.getColumnIndex(ContactsContract.Contacts.HAS_PHONE_NUMBER));
+
+                    if (hasPhone.equalsIgnoreCase("1")) {
+                        Cursor phones = mContext.getContentResolver().query(
+                                ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null,
+                                ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = " + id,
+                                null, null);
+                        if (phones != null && phones.moveToFirst()) {
+                            final String cNumber = phones.getString(phones.getColumnIndex("data1"));
+                            phones.close();
+                            s.close();
+
+                            handler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    getView().openCallIntent(cNumber);
+                                }
+                            });
+                        }
+                    }
+                }
+            }
+        }).start();
+    }
+    private void getAddress(final Context mContext, final double lat, final double lon) {
         new Thread(new Runnable() {
             @Override
             public void run() {
 
                 try {
                     List<Address> addresses;
-                    Geocoder geocoder = new Geocoder(getView().getContext(), Locale.getDefault());
+                    Geocoder geocoder = new Geocoder(mContext, Locale.getDefault());
                     addresses = geocoder.getFromLocation(lat, lon, 1);
 
                     final String addressLine = addresses.get(0).getAddressLine(0);

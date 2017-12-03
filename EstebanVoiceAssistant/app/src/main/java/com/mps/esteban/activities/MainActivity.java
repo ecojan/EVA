@@ -43,6 +43,7 @@ import com.mps.esteban.R;
 import com.mps.esteban.application.MyApplication;
 import com.mps.esteban.mvp.BaseActivity;
 import com.mps.esteban.utils.IntentManager;
+import com.mps.esteban.utils.PrefUtils;
 
 import javax.inject.Inject;
 
@@ -89,9 +90,7 @@ public class MainActivity extends BaseActivity<Contract.ContractPresenter> imple
                 intentManager.promptSpeechInput(this);
                 break;
             case R.id.addressValue:
-                String map = "http://maps.google.co.in/maps?q=" + addressValue.getText().toString();
-                Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(map));
-                startActivity(i);
+                intentManager.openMapWithCurrentLocation(this, addressValue.getText().toString());
                 break;
             default:
                 break;
@@ -99,18 +98,39 @@ public class MainActivity extends BaseActivity<Contract.ContractPresenter> imple
     }
 
     @Override
-    public void showPermissionsAlert(final List<String> listPermissions) {
+    public void showPermissionsAlert(final int permissionsType, final List<String> listPermissions) {
         AlertDialog.Builder alertDialog = new AlertDialog.Builder(this);
-        alertDialog.setTitle("Location permission is not Enabled!");
-        alertDialog.setMessage(getString(R.string.location_permission_question));
+        final boolean shouldShowRequestPermissionRationale;
+        final int requestType;
+        switch (permissionsType) {
+            case IntentManager.REQ_PERMISSION_LOCATION:
+                alertDialog.setTitle("Location permission is not Enabled!");
+                alertDialog.setMessage(getString(R.string.location_permission_question));
+                requestType = IntentManager.REQ_PERMISSION_LOCATION;
+                shouldShowRequestPermissionRationale = PrefUtils.getSharedPreference(this, PrefUtils.FIRST_TIME_LOCATION_PERMISSION, true)
+                        || (ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION)
+                        && ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION));
+                break;
+            case IntentManager.REQ_PERMISSION_CONTACTS:
+                alertDialog.setTitle("Contacts permission is not Enabled!");
+                alertDialog.setMessage(getString(R.string.contacts_permission_question));
+                requestType = IntentManager.REQ_PERMISSION_CONTACTS;
+                shouldShowRequestPermissionRationale = PrefUtils.getSharedPreference(this, PrefUtils.FIRST_TIME_CONTACTS_PERMISSION, true)
+                        || (ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this, Manifest.permission.READ_CONTACTS)
+                        && ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this, Manifest.permission.CALL_PHONE));
+                break;
+            default:
+                shouldShowRequestPermissionRationale = true;
+                requestType = IntentManager.REQ_PERMISSION_LOCATION;
+                break;
+        }
         alertDialog.setCancelable(false);
         alertDialog.setPositiveButton("Allow", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int which) {
-                if (ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION)
-                        && ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION)) {
-                    intentManager.requestPermissions(MainActivity.this, listPermissions);
+                if (shouldShowRequestPermissionRationale) {
+                    intentManager.requestPermissions(MainActivity.this, listPermissions, requestType);
                 } else {
-                    intentManager.openAppDetails(MainActivity.this);
+                    intentManager.openAppDetails(MainActivity.this, requestType);
                 }
                 dialog.cancel();
             }
@@ -156,6 +176,44 @@ public class MainActivity extends BaseActivity<Contract.ContractPresenter> imple
                 addressValue.setText("Address not detected yet!");
             }
         }
+    }
+
+    @Override
+    public void processCommand(String command) {
+        switch(command.toLowerCase().split(" ")[0]) {
+            case "get":
+            case "give":
+                switch (command.toLowerCase().substring(command.indexOf(' ')+1)) {
+                    case "me my location":
+                        getPresenter().askForLocation();
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            case "call":
+                PrefUtils.setSharedPreference(this, PrefUtils.COMMAND, command);
+                getPresenter().askForCallIntent();
+                break;
+            default:
+                intentManager.searchOnGoogle(this, command);
+                break;
+        }
+    }
+
+    @Override
+    public void callCommand() {
+        String command = PrefUtils.getSharedPreference(this, PrefUtils.COMMAND, "");
+        if (!command.isEmpty() && command.toLowerCase().split(" ").length <= 1) {
+            intentManager.pickContent(this);
+        } else {
+            openCallIntent(command.toLowerCase().substring(command.indexOf(' ')+1));
+        }
+    }
+
+    @Override
+    public void openCallIntent(String phoneNumber) {
+        intentManager.callIntent(this, phoneNumber);
     }
 
     @Override

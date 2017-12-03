@@ -15,11 +15,14 @@ import java.util.List;
 class Contract {
 
     public interface ContractView extends BaseContract.ContractView {
-        void showPermissionsAlert(final List<String> listPermissions);
+        void showPermissionsAlert(int permissionsType, final List<String> listPermissions);
         void showSettingsAlert();
         void setAddress(String address);
+        void processCommand(String command);
+        void openCallIntent(String phoneNumber);
         void setSpeechInput(String input);
         Context getContext();
+        void callCommand();
         void changeAddressVisibility(int visibility);
     }
 
@@ -28,6 +31,7 @@ class Contract {
         void processActivityResults(int requestCode, int resultCode, Intent data);
         void askForLocation();
         void disconnectGoogleApiClient();
+        void askForCallIntent();
     }
 
 }
