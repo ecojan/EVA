@@ -19,6 +19,7 @@ import android.os.BatteryManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.ContactsContract;
+import android.provider.MediaStore;
 import android.speech.RecognizerIntent;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -64,6 +65,7 @@ public class MainPresenter extends BasePresenter<Contract.ContractView> implemen
     private LocationManager geoLocationService;
     private boolean providerIsEnabled = false;
     private boolean permissionGranted = false;
+    static final int REQUEST_IMAGE_CAPTURE = 1;
 
     public MainPresenter(Contract.ContractView view) {
         super(view);
@@ -300,7 +302,8 @@ public class MainPresenter extends BasePresenter<Contract.ContractView> implemen
                     }
                 }
             }
-        } catch (Exception ex) {}
+        } catch (Exception ex) {
+        }
         resultData.setText("No ip address");
         return;
     }
@@ -438,5 +441,40 @@ public class MainPresenter extends BasePresenter<Contract.ContractView> implemen
 
             }
         }).start();
+    }
+
+    @Override
+    public void openCamera(Activity activity) {
+        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        takePictureIntent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        takePictureIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        if (takePictureIntent.resolveActivity(activity.getPackageManager()) != null) {
+            activity.startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
+        }
+    }
+
+    @Override
+    public void openSMS(Activity activity) {
+        Intent sendIntent = new Intent(Intent.ACTION_VIEW);
+        sendIntent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        sendIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        sendIntent.setData(Uri.parse("sms:"));
+        activity.getApplicationContext().startActivity(sendIntent);
+    }
+
+    @Override
+    public void openMusicPlayer(Activity activity) {
+        Intent musicIntent = new Intent("android.intent.action.MUSIC_PLAYER");
+        musicIntent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        musicIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        activity.getApplicationContext().startActivity(musicIntent);
+    }
+
+    @Override
+    public void openDialer(Activity activity) {
+        Intent dialerIntent = new Intent(Intent.ACTION_DIAL);
+        dialerIntent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        dialerIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        activity.getApplicationContext().startActivity(dialerIntent);
     }
 }

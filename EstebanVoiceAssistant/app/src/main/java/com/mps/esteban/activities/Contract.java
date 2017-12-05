@@ -1,5 +1,6 @@
 package com.mps.esteban.activities;
 
+import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -35,6 +36,10 @@ class Contract {
         void askForTime(TextView resultData);
         BroadcastReceiver askForBattery(Context context, TextView resultData);
         void askForIpAddress(boolean IPv4, TextView resultData);
+        void openCamera(Activity activity);
+        void openSMS(Activity activity);
+        void openMusicPlayer(Activity activity);
+        void openDialer(Activity activity);
         void disconnectGoogleApiClient();
         void askForCallIntent();
     }

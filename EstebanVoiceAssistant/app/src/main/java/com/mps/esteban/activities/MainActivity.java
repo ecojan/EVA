@@ -89,8 +89,7 @@ public class MainActivity extends BaseActivity<Contract.ContractPresenter> imple
     public void onSelectEntry(View view) {
         switch (view.getId()) {
             case R.id.activity_main_mexican_btn:
-                //intentManager.promptSpeechInput(this);
-                processCommand("give me the ip address");
+                intentManager.promptSpeechInput(this);
                 break;
             case R.id.addressValue:
                 intentManager.openMapWithCurrentLocation(this, addressValue.getText().toString());
@@ -207,6 +206,23 @@ public class MainActivity extends BaseActivity<Contract.ContractPresenter> imple
             case "shutdown":
                 shutDown();
                 break;
+            case "open":
+                switch (command.toLowerCase().substring(command.indexOf(' ')+1)){
+                    case "camera":
+                        getPresenter().openCamera(this);
+                        break;
+                    case "sms":
+                        getPresenter().openSMS(this);
+                        break;
+                    case "music player":
+                        getPresenter().openMusicPlayer(this);
+                        break;
+                    case "dialer":
+                        getPresenter().openDialer(this);
+                        break;
+                    default:
+                        break;
+                }
             case "call":
                 PrefUtils.setSharedPreference(this, PrefUtils.COMMAND, command);
                 getPresenter().askForCallIntent();
