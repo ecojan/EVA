@@ -3,8 +3,10 @@ package com.mps.esteban.activities;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.location.Address;
@@ -13,15 +15,16 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.Uri;
+import android.os.BatteryManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.ContactsContract;
 import android.speech.RecognizerIntent;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.view.View;
+import android.widget.TextView;
 
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationRequest;
@@ -29,22 +32,31 @@ import com.google.android.gms.location.LocationServices;
 import com.mps.esteban.application.MyApplication;
 import com.mps.esteban.mvp.BasePresenter;
 import com.mps.esteban.utils.IntentManager;
-import com.mps.esteban.utils.PrefUtils;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
 import javax.inject.Inject;
 
+import static com.mps.esteban.R.id.txtSpeechInput;
+
+
 /**
  * Created by cosmin on 30.11.2017.
  */
 
-public class MainPresenter extends BasePresenter<Contract.ContractView> implements Contract.ContractPresenter, LocationListener  {
+public class MainPresenter extends BasePresenter<Contract.ContractView> implements Contract.ContractPresenter, LocationListener {
 
-    @Inject Handler handler;
+    @Inject
+    Handler handler;
 
     private LocationRequest gmsRequest;
     private String disabledProviders = "";
@@ -197,7 +209,8 @@ public class MainPresenter extends BasePresenter<Contract.ContractView> implemen
     }
 
     @Override
-    public void onStatusChanged(String s, int i, Bundle bundle) { }
+    public void onStatusChanged(String s, int i, Bundle bundle) {
+    }
 
     @Override
     public void onProviderEnabled(String s) {
@@ -241,6 +254,57 @@ public class MainPresenter extends BasePresenter<Contract.ContractView> implemen
 //        ActivityCompat.requestPermissions(activity, new String[]{Manifest.permission.READ_CONTACTS}, resultValue);
     }
 
+    @Override
+    public void askForTime(TextView resultData) {
+        Date currentTime = Calendar.getInstance().getTime();
+        String theTime = DateFormat.getTimeInstance(DateFormat.SHORT).format(currentTime);
+        resultData.setText(theTime);
+    }
+
+    @Override
+    public BroadcastReceiver askForBattery(Context context, final TextView resultData) {
+        BroadcastReceiver batteryInfo = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, 0);
+                resultData.setText(String.valueOf(level) + "%");
+            }
+        };
+
+        return batteryInfo;
+    }
+
+    @Override
+    public void askForIpAddress(boolean IPv4, TextView resultData) {
+        try {
+            List<NetworkInterface> interfaces = Collections.list(NetworkInterface.getNetworkInterfaces());
+            for (NetworkInterface intf : interfaces) {
+                List<InetAddress> addrs = Collections.list(intf.getInetAddresses());
+                for (InetAddress addr : addrs) {
+                    if (!addr.isLoopbackAddress()) {
+                        String sAddr = addr.getHostAddress();
+                        boolean isIPv4 = sAddr.indexOf(':') < 0;
+
+                        if (IPv4) {
+                            if (isIPv4) {
+                                resultData.setText(sAddr);
+                                return;
+                            }
+                        } else {
+                            if (!isIPv4) {
+                                int delim = sAddr.indexOf('%');
+                                resultData.setText(delim < 0 ? sAddr.toUpperCase() : sAddr.substring(0, delim).toUpperCase());
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception ex) {}
+        resultData.setText("No ip address");
+        return;
+    }
+
     private void locationChanged(Location location) {
         if (!disabledProviders.equals("gps") && location != null) {
             getAddress(getView().getContext(), location.getLatitude(), location.getLongitude());
@@ -271,7 +335,7 @@ public class MainPresenter extends BasePresenter<Contract.ContractView> implemen
             locationChanged(geoLocationService.getLastKnownLocation(LocationManager.NETWORK_PROVIDER));
             locationChanged(geoLocationService.getLastKnownLocation(LocationManager.GPS_PROVIDER));
 
-            if(providerIsEnabled) {
+            if (providerIsEnabled) {
                 permissionGrantedFlow();
             } else {
                 getView().showSettingsAlert();
@@ -348,6 +412,7 @@ public class MainPresenter extends BasePresenter<Contract.ContractView> implemen
             }
         }).start();
     }
+
     private void getAddress(final Context mContext, final double lat, final double lon) {
         new Thread(new Runnable() {
             @Override

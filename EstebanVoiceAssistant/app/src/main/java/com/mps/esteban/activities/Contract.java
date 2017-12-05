@@ -1,8 +1,10 @@
 package com.mps.esteban.activities;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.support.annotation.NonNull;
+import android.widget.TextView;
 
 import com.mps.esteban.mvp.BaseContract;
 
@@ -30,6 +32,9 @@ class Contract {
         void processRequestedPermissions(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults);
         void processActivityResults(int requestCode, int resultCode, Intent data);
         void askForLocation();
+        void askForTime(TextView resultData);
+        BroadcastReceiver askForBattery(Context context, TextView resultData);
+        void askForIpAddress(boolean IPv4, TextView resultData);
         void disconnectGoogleApiClient();
         void askForCallIntent();
     }

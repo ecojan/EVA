@@ -3,6 +3,7 @@ package com.mps.esteban.activities;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.SearchManager;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -13,6 +14,7 @@ import java.util.List;
 import java.util.Locale;
 
 import android.content.ActivityNotFoundException;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
@@ -21,6 +23,7 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.BatteryManager;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.speech.RecognizerIntent;
@@ -58,7 +61,6 @@ public class MainActivity extends BaseActivity<Contract.ContractPresenter> imple
 
     @Inject IntentManager intentManager;
 
-
     @Override
     public void setupToolbar() { }
 
@@ -87,7 +89,8 @@ public class MainActivity extends BaseActivity<Contract.ContractPresenter> imple
     public void onSelectEntry(View view) {
         switch (view.getId()) {
             case R.id.activity_main_mexican_btn:
-                intentManager.promptSpeechInput(this);
+                //intentManager.promptSpeechInput(this);
+                processCommand("give me the ip address");
                 break;
             case R.id.addressValue:
                 intentManager.openMapWithCurrentLocation(this, addressValue.getText().toString());
@@ -187,9 +190,22 @@ public class MainActivity extends BaseActivity<Contract.ContractPresenter> imple
                     case "me my location":
                         getPresenter().askForLocation();
                         break;
+                    case "me the time":
+                        getPresenter().askForTime(txtSpeechInput);
+                        break;
+                    case "me the battery":
+                        this.registerReceiver(getPresenter().askForBattery(this, txtSpeechInput),
+                                new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+                        break;
+                    case "me the ip address":
+                        /*true for IPv4, false for IPv6*/
+                        getPresenter().askForIpAddress(true, txtSpeechInput);
                     default:
                         break;
                 }
+                break;
+            case "shutdown":
+                shutDown();
                 break;
             case "call":
                 PrefUtils.setSharedPreference(this, PrefUtils.COMMAND, command);
@@ -247,5 +263,10 @@ public class MainActivity extends BaseActivity<Contract.ContractPresenter> imple
     public void onBackPressed() {
         super.onBackPressed();
         getPresenter().disconnectGoogleApiClient();
+    }
+
+    public void shutDown() {
+        this.finish();
+        System.exit(0);
     }
 }
