@@ -3,6 +3,7 @@ package com.mps.esteban.application;
 import android.app.Application;
 import android.content.Context;
 
+import com.facebook.FacebookSdk;
 import com.mps.esteban.dagger.AppComponent;
 import com.mps.esteban.dagger.AppModule;
 import com.mps.esteban.dagger.DaggerAppComponent;

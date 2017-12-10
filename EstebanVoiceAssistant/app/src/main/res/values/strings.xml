@@ -12,5 +12,7 @@
     <string name="location_permission_question">Allow <b>Esteban</b> to access this device location?</string>
     <string name="contacts_permission_question">Allow <b>Esteban</b> to access this device contacts?</string>
     <string name="location_settings_question">Do you want to turn on?</string>
+    <string name="facebook_app_id">1743852772577256</string>
+    <string name="fb_login_protocol_scheme">fb1743852772577256</string>
 
 </resources>

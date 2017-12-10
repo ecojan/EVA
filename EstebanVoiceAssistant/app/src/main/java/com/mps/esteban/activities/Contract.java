@@ -4,9 +4,11 @@ import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.media.FaceDetector;
 import android.support.annotation.NonNull;
 import android.widget.TextView;
 
+import com.mps.esteban.forms.FacebookDetails;
 import com.mps.esteban.mvp.BaseContract;
 
 import java.util.List;
@@ -27,6 +29,7 @@ class Contract {
         Context getContext();
         void callCommand();
         void changeAddressVisibility(int visibility);
+        void setFacebookDetails(FacebookDetails facebookDetails);
     }
 
     public interface ContractPresenter extends BaseContract.ContractPresenter {
@@ -42,6 +45,7 @@ class Contract {
         void openDialer(Activity activity);
         void disconnectGoogleApiClient();
         void askForCallIntent();
+        void getFacebookDetails();
     }
 
 }

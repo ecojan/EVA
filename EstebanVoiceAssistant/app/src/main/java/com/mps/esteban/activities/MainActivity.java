@@ -10,6 +10,7 @@ import android.content.Intent;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
@@ -39,11 +40,21 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.support.v7.app.AppCompatActivity;
 
+import com.facebook.AccessToken;
+import com.facebook.AccessTokenTracker;
+import com.facebook.CallbackManager;
+import com.facebook.FacebookCallback;
+import com.facebook.FacebookException;
+import com.facebook.FacebookSdk;
+import com.facebook.appevents.AppEventsLogger;
+import com.facebook.login.LoginManager;
+import com.facebook.login.LoginResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.mps.esteban.R;
 import com.mps.esteban.application.MyApplication;
+import com.mps.esteban.forms.FacebookDetails;
 import com.mps.esteban.mvp.BaseActivity;
 import com.mps.esteban.utils.IntentManager;
 import com.mps.esteban.utils.PrefUtils;
@@ -57,9 +68,17 @@ public class MainActivity extends BaseActivity<Contract.ContractPresenter> imple
 
     @BindView(R.id.txtSpeechInput) TextView txtSpeechInput;
     @BindView(R.id.addressValue) TextView addressValue;
+    @BindView(R.id.profile_name) TextView profile_name;
+    @BindView(R.id.email_address) TextView email_address;
+    @BindView(R.id.number_of_friends) TextView number_of_friends;
+    @BindView(R.id.facebook_container) View facebook_container;
     @BindView(R.id.activity_main_mexican_btn) ImageButton mexicanBtn;
 
     @Inject IntentManager intentManager;
+
+    AccessToken mAccessToken;
+    AccessTokenTracker accessTokenTracker;
+    CallbackManager mCallbackManager;
 
     @Override
     public void setupToolbar() { }
@@ -83,6 +102,45 @@ public class MainActivity extends BaseActivity<Contract.ContractPresenter> imple
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         this.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        FacebookSdk.sdkInitialize(getApplicationContext());
+        mCallbackManager = CallbackManager.Factory.create();
+
+        LoginManager.getInstance().registerCallback(mCallbackManager,
+                new FacebookCallback<LoginResult>() {
+
+                    @Override
+                    public void onSuccess(LoginResult loginResult) {
+                        //you will get access token here
+                        mAccessToken = loginResult.getAccessToken();
+
+
+
+                    }
+
+                    @Override
+                    public void onCancel() {
+
+                    }
+
+                    @Override
+                    public void onError(FacebookException error) {
+
+                    }
+                });
+
+        accessTokenTracker = new AccessTokenTracker() {
+            @Override
+            protected void onCurrentAccessTokenChanged(
+                    AccessToken oldAccessToken,
+                    AccessToken currentAccessToken) {
+                // Set the access token using
+                // currentAccessToken when it's loaded or set.
+                mAccessToken = currentAccessToken;
+            }
+        };
+
+        LoginManager.getInstance().logInWithReadPermissions(this, Arrays.asList("public_profile", "email", "user_friends"));
+//        LoginManager.getInstance().logInWithPublishPermissions(this, Arrays.asList("manage_notifications"));
     }
 
     @OnClick(value = {R.id.activity_main_mexican_btn, R.id.addressValue})
@@ -171,6 +229,7 @@ public class MainActivity extends BaseActivity<Contract.ContractPresenter> imple
 
     @Override
     public void setAddress(String address) {
+        facebook_container.setVisibility(View.GONE);
         if (addressValue != null) {
             if (address != null && !address.isEmpty()) {
                 addressValue.setText(address);
@@ -223,6 +282,10 @@ public class MainActivity extends BaseActivity<Contract.ContractPresenter> imple
                     default:
                         break;
                 }
+                break;
+            case "facebook":
+                getPresenter().getFacebookDetails();
+                break;
             case "call":
                 PrefUtils.setSharedPreference(this, PrefUtils.COMMAND, command);
                 getPresenter().askForCallIntent();
@@ -260,14 +323,25 @@ public class MainActivity extends BaseActivity<Contract.ContractPresenter> imple
 
     @Override
     public void changeAddressVisibility(int visibility) {
+        facebook_container.setVisibility(View.GONE);
         addressValue.setVisibility(visibility);
         addressValue.setText("Address not detected yet!");
+    }
+
+    @Override
+    public void setFacebookDetails(FacebookDetails facebookDetails) {
+        facebook_container.setVisibility(View.VISIBLE);
+        addressValue.setVisibility(View.GONE);
+        profile_name.setText(facebookDetails.getName());
+        email_address.setText(facebookDetails.getEmail());
+        number_of_friends.setText("Friends: " + String.valueOf(facebookDetails.getNumber_of_friends()));
     }
 
     @SuppressLint("MissingPermission")
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         getPresenter().processActivityResults(requestCode, resultCode, data);
+        mCallbackManager.onActivityResult(requestCode, resultCode, data);
     }
 
     @Override

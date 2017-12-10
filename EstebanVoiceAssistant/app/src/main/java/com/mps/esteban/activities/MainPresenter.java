@@ -15,6 +15,7 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.BatteryManager;
 import android.os.Bundle;
 import android.os.Handler;
@@ -24,15 +25,25 @@ import android.speech.RecognizerIntent;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
+import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
+import com.facebook.AccessToken;
+import com.facebook.GraphRequest;
+import com.facebook.GraphResponse;
+import com.facebook.HttpMethod;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.mps.esteban.application.MyApplication;
+import com.mps.esteban.forms.FacebookDetails;
 import com.mps.esteban.mvp.BasePresenter;
 import com.mps.esteban.utils.IntentManager;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -306,6 +317,57 @@ public class MainPresenter extends BasePresenter<Contract.ContractView> implemen
         }
         resultData.setText("No ip address");
         return;
+    }
+
+    @Override
+    public void getFacebookDetails() {
+        final AccessToken accessToken = AccessToken.getCurrentAccessToken();
+        final Bundle parameters1 = new Bundle();
+        parameters1.putString("fields", "id,name,email,friends");
+//        final Bundle parameters2 = new Bundle();
+//        parameters2.putString("limit", "500");
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                /* make the API call */
+                new GraphRequest(
+                        accessToken,
+                        "/me",
+                        parameters1,
+                        HttpMethod.GET,
+                        new GraphRequest.Callback() {
+                            public void onCompleted(GraphResponse response) {
+                                /* handle the result */
+                                if (response != null && response.getError() == null) {
+                                    JSONObject responseJson = response.getJSONObject();
+                                    final FacebookDetails facebookDetails = new FacebookDetails(responseJson);
+                                    handler.post(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            getView().setFacebookDetails(facebookDetails);
+                                        }
+                                    });
+                                }
+                            }
+                        }
+                ).executeAsync();
+
+//                new GraphRequest(
+//                        AccessToken.getCurrentAccessToken(),
+//                        "/me/taggable_friends",
+//                        parameters2,
+//                        HttpMethod.GET,
+//                        new GraphRequest.Callback() {
+//                            public void onCompleted(GraphResponse response) {
+//                                /* handle the result */
+//                                if (response != null) {
+//
+//                                }
+//                            }
+//                        }
+//                ).executeAsync();
+            }
+        }).start();
     }
 
     private void locationChanged(Location location) {
