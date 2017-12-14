@@ -525,6 +525,16 @@ public class MainPresenter extends BasePresenter<Contract.ContractView> implemen
     }
 
     @Override
+    public void sendMessage(Activity activity, String s) {
+        Intent sendIntent = new Intent(Intent.ACTION_VIEW);
+        sendIntent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        sendIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        sendIntent.setData(Uri.parse("sms:"));
+        sendIntent.putExtra("sms_body", s);
+        activity.getApplicationContext().startActivity(sendIntent);
+    }
+
+    @Override
     public void openMusicPlayer(Activity activity) {
         Intent musicIntent = new Intent("android.intent.action.MUSIC_PLAYER");
         musicIntent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);

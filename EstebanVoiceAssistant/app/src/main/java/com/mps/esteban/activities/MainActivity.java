@@ -33,6 +33,7 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
+import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageButton;
@@ -64,24 +65,35 @@ import javax.inject.Inject;
 import butterknife.BindView;
 import butterknife.OnClick;
 
-public class MainActivity extends BaseActivity<Contract.ContractPresenter> implements Contract.ContractView{
+public class MainActivity extends BaseActivity<Contract.ContractPresenter> implements Contract.ContractView {
 
-    @BindView(R.id.txtSpeechInput) TextView txtSpeechInput;
-    @BindView(R.id.addressValue) TextView addressValue;
-    @BindView(R.id.profile_name) TextView profile_name;
-    @BindView(R.id.email_address) TextView email_address;
-    @BindView(R.id.number_of_friends) TextView number_of_friends;
-    @BindView(R.id.facebook_container) View facebook_container;
-    @BindView(R.id.activity_main_mexican_btn) ImageButton mexicanBtn;
+    private static final String TAG = "MainActivity";
 
-    @Inject IntentManager intentManager;
+    @BindView(R.id.txtSpeechInput)
+    TextView txtSpeechInput;
+    @BindView(R.id.addressValue)
+    TextView addressValue;
+    @BindView(R.id.profile_name)
+    TextView profile_name;
+    @BindView(R.id.email_address)
+    TextView email_address;
+    @BindView(R.id.number_of_friends)
+    TextView number_of_friends;
+    @BindView(R.id.facebook_container)
+    View facebook_container;
+    @BindView(R.id.activity_main_mexican_btn)
+    ImageButton mexicanBtn;
+
+    @Inject
+    IntentManager intentManager;
 
     AccessToken mAccessToken;
     AccessTokenTracker accessTokenTracker;
     CallbackManager mCallbackManager;
 
     @Override
-    public void setupToolbar() { }
+    public void setupToolbar() {
+    }
 
     @Override
     public int bindLayout() {
@@ -112,7 +124,6 @@ public class MainActivity extends BaseActivity<Contract.ContractPresenter> imple
                     public void onSuccess(LoginResult loginResult) {
                         //you will get access token here
                         mAccessToken = loginResult.getAccessToken();
-
 
 
                     }
@@ -241,10 +252,10 @@ public class MainActivity extends BaseActivity<Contract.ContractPresenter> imple
 
     @Override
     public void processCommand(String command) {
-        switch(command.toLowerCase().split(" ")[0]) {
+        switch (command.toLowerCase().split(" ")[0]) {
             case "get":
             case "give":
-                switch (command.toLowerCase().substring(command.indexOf(' ')+1)) {
+                switch (command.toLowerCase().substring(command.indexOf(' ') + 1)) {
                     case "me my location":
                         getPresenter().askForLocation();
                         break;
@@ -266,12 +277,19 @@ public class MainActivity extends BaseActivity<Contract.ContractPresenter> imple
                 shutDown();
                 break;
             case "open":
-                switch (command.toLowerCase().substring(command.indexOf(' ')+1)){
+                switch (command.toLowerCase().substring(command.indexOf(' ') + 1).split(" ",2)[0]) {
                     case "camera":
                         getPresenter().openCamera(this);
                         break;
                     case "sms":
-                        getPresenter().openSMS(this);
+                        int i = command.split(" ").length;
+
+                        if (i != 2) {
+                            String s = command.toLowerCase().split(" ",3)[2];
+                            getPresenter().sendMessage(this,s);
+                        } else {
+                            getPresenter().openSMS(this);
+                        }
                         break;
                     case "music player":
                         getPresenter().openMusicPlayer(this);
@@ -302,7 +320,7 @@ public class MainActivity extends BaseActivity<Contract.ContractPresenter> imple
         if (!command.isEmpty() && command.toLowerCase().split(" ").length <= 1) {
             intentManager.pickContent(this);
         } else {
-            openCallIntent(command.toLowerCase().substring(command.indexOf(' ')+1));
+            openCallIntent(command.toLowerCase().substring(command.indexOf(' ') + 1));
         }
     }
 

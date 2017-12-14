@@ -41,6 +41,7 @@ class Contract {
         void askForIpAddress(boolean IPv4, TextView resultData);
         void openCamera(Activity activity);
         void openSMS(Activity activity);
+        void sendMessage(Activity activity, String s);
         void openMusicPlayer(Activity activity);
         void openDialer(Activity activity);
         void disconnectGoogleApiClient();
