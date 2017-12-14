@@ -294,7 +294,7 @@ public class MainActivity extends BaseActivity<Contract.ContractPresenter> imple
                     case "music player":
                         getPresenter().openMusicPlayer(this);
                         break;
-                    case "dialer":
+                    case "dialler":
                         getPresenter().openDialer(this);
                         break;
                     default:
