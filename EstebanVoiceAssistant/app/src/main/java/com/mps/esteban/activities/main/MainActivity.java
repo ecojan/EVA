@@ -309,6 +309,7 @@ public class MainActivity extends BaseActivity<Contract.ContractPresenter> imple
                     case "music":
                         intentManager.openMusicPlayer(this);
                         break;
+                    case "dialer":
                     case "dialler":
                         intentManager.openDialer(this);
                         break;
