@@ -23,6 +23,7 @@ import android.speech.RecognizerIntent;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
+import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
@@ -35,8 +36,11 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.mps.esteban.application.MyApplication;
 import com.mps.esteban.forms.FacebookDetails;
+import com.mps.esteban.forms.ResponseWeather;
 import com.mps.esteban.mvp.BasePresenter;
+import com.mps.esteban.retrofit.ApiCall;
 import com.mps.esteban.utils.IntentManager;
+import com.mps.esteban.utils.PrefUtils;
 
 import org.json.JSONObject;
 
@@ -53,6 +57,10 @@ import java.util.Locale;
 
 import javax.inject.Inject;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 
 /**
  * Created by cosmin on 30.11.2017.
@@ -61,6 +69,7 @@ import javax.inject.Inject;
 public class MainPresenter extends BasePresenter<Contract.ContractView> implements Contract.ContractPresenter, LocationListener {
 
     @Inject Handler handler;
+    @Inject ApiCall apiCall;
 
     private LocationRequest gmsRequest;
     private String disabledProviders = "";
@@ -68,7 +77,6 @@ public class MainPresenter extends BasePresenter<Contract.ContractView> implemen
     private LocationManager geoLocationService;
     private boolean providerIsEnabled = false;
     private boolean permissionGranted = false;
-    static final int REQUEST_IMAGE_CAPTURE = 1;
 
     public MainPresenter(Contract.ContractView view) {
         super(view);
@@ -362,6 +370,79 @@ public class MainPresenter extends BasePresenter<Contract.ContractView> implemen
         }).start();
     }
 
+    @Override
+    public void getWeatherByCity(final String cityName, final String appid, final String metric) {
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                apiCall.getApiService()
+                        .getWeatherByCity(cityName, appid, metric)
+                        .enqueue(new Callback<ResponseWeather>() {
+                            @Override
+                            public void onResponse(Call<ResponseWeather> call, final Response<ResponseWeather> response) {
+                                if (response.isSuccessful() && response.body() != null) {
+                                    handler.post(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            getView().setWeatherValues(response.body());
+                                        }
+                                    });
+                                } else {
+                                    handler.post(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            getView().setWeatherValues(null);
+                                        }
+                                    });
+                                }
+                            }
+
+                            @Override
+                            public void onFailure(Call<ResponseWeather> call, Throwable t) {
+                                Log.d("weather: ", "api failed");
+                            }
+                        });
+            }
+        }).start();
+    }
+
+    @Override
+    public void getWeatherByLatLon(final double lat, final double lon, final String appid, final String metric) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                apiCall.getApiService()
+                        .getWeatherByCurrentLocation(lat, lon, appid, metric)
+                        .enqueue(new Callback<ResponseWeather>() {
+                            @Override
+                            public void onResponse(Call<ResponseWeather> call, final Response<ResponseWeather> response) {
+                                if (response.isSuccessful() && response.body() != null) {
+                                    handler.post(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            getView().setWeatherValues(response.body());
+                                        }
+                                    });
+                                } else {
+                                    handler.post(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            getView().setWeatherValues(null);
+                                        }
+                                    });
+                                }
+                            }
+
+                            @Override
+                            public void onFailure(Call<ResponseWeather> call, Throwable t) {
+                                Log.d("weather: ", "api failed");
+                            }
+                        });
+            }
+        }).start();
+    }
+
     private void locationChanged(Location location) {
         if (!disabledProviders.equals("gps") && location != null) {
             getAddress(getView().getContext(), location.getLatitude(), location.getLongitude());
@@ -476,7 +557,7 @@ public class MainPresenter extends BasePresenter<Contract.ContractView> implemen
             public void run() {
 
                 try {
-                    List<Address> addresses;
+                    final List<Address> addresses;
                     Geocoder geocoder = new Geocoder(mContext, Locale.getDefault());
                     addresses = geocoder.getFromLocation(lat, lon, 1);
 
@@ -485,7 +566,7 @@ public class MainPresenter extends BasePresenter<Contract.ContractView> implemen
                     handler.post(new Runnable() {
                         @Override
                         public void run() {
-                            getView().setAddress(addressLine);
+                            getView().setAddress(addressLine, lat, lon, addresses.get(0).getLocality());
                         }
                     });
 
@@ -497,48 +578,4 @@ public class MainPresenter extends BasePresenter<Contract.ContractView> implemen
         }).start();
     }
 
-    @Override
-    public void openCamera(Activity activity) {
-        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        takePictureIntent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-        takePictureIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        if (takePictureIntent.resolveActivity(activity.getPackageManager()) != null) {
-            activity.startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
-        }
-    }
-
-    @Override
-    public void openSMS(Activity activity) {
-        Intent sendIntent = new Intent(Intent.ACTION_VIEW);
-        sendIntent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-        sendIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        sendIntent.setData(Uri.parse("sms:"));
-        activity.getApplicationContext().startActivity(sendIntent);
-    }
-
-    @Override
-    public void sendMessage(Activity activity, String s) {
-        Intent sendIntent = new Intent(Intent.ACTION_VIEW);
-        sendIntent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-        sendIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        sendIntent.setData(Uri.parse("sms:"));
-        sendIntent.putExtra("sms_body", s);
-        activity.getApplicationContext().startActivity(sendIntent);
-    }
-
-    @Override
-    public void openMusicPlayer(Activity activity) {
-        Intent musicIntent = new Intent("android.intent.action.MUSIC_PLAYER");
-        musicIntent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-        musicIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        activity.getApplicationContext().startActivity(musicIntent);
-    }
-
-    @Override
-    public void openDialer(Activity activity) {
-        Intent dialerIntent = new Intent(Intent.ACTION_DIAL);
-        dialerIntent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-        dialerIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        activity.getApplicationContext().startActivity(dialerIntent);
-    }
 }

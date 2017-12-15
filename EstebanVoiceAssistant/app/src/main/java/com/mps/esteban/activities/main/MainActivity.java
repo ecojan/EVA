@@ -31,6 +31,7 @@ import com.facebook.login.LoginResult;
 import com.mps.esteban.R;
 import com.mps.esteban.application.MyApplication;
 import com.mps.esteban.forms.FacebookDetails;
+import com.mps.esteban.forms.ResponseWeather;
 import com.mps.esteban.mvp.BaseActivity;
 import com.mps.esteban.utils.IntentManager;
 import com.mps.esteban.utils.PrefUtils;
@@ -46,6 +47,16 @@ public class MainActivity extends BaseActivity<Contract.ContractPresenter> imple
 
     @BindView(R.id.txtSpeechInput)
     TextView txtSpeechInput;
+
+    @BindView(R.id.description)
+    TextView description;
+    @BindView(R.id.temperature)
+    TextView temperature;
+    @BindView(R.id.pressure)
+    TextView pressure;
+    @BindView(R.id.wind)
+    TextView wind;
+
     @BindView(R.id.addressValue)
     TextView addressValue;
     @BindView(R.id.profile_name)
@@ -54,6 +65,8 @@ public class MainActivity extends BaseActivity<Contract.ContractPresenter> imple
     TextView email_address;
     @BindView(R.id.number_of_friends)
     TextView number_of_friends;
+    @BindView(R.id.weatherContainer)
+    View weatherContainer;
     @BindView(R.id.facebook_container)
     View facebook_container;
     @BindView(R.id.activity_main_mexican_btn)
@@ -214,23 +227,38 @@ public class MainActivity extends BaseActivity<Contract.ContractPresenter> imple
     }
 
     @Override
-    public void setAddress(String address) {
-        facebook_container.setVisibility(View.GONE);
-        if (addressValue != null) {
-            if (address != null && !address.isEmpty()) {
-                addressValue.setText(address);
-            } else {
-                addressValue.setText("Address not detected yet!");
+    public void setAddress(String address, double lat, double lon, String cityName) {
+
+        if (PrefUtils.getSharedPreference(this, "facebookFlag", false)) {
+            return;
+        } else if (PrefUtils.getSharedPreference(this, "weatherFlag", false)) {
+            facebook_container.setVisibility(View.GONE);
+            addressValue.setVisibility(View.GONE);
+            getPresenter().getWeatherByLatLon(lat, lon, getString(R.string.weather_appid), "metric");
+        } else {
+            if (addressValue != null) {
+                if (address != null && !address.isEmpty()) {
+                    addressValue.setText(address);
+                } else {
+                    addressValue.setText("Address not detected yet!");
+                }
             }
         }
     }
 
     @Override
     public void processCommand(String command) {
+        addressValue.setVisibility(View.GONE);
+        weatherContainer.setVisibility(View.GONE);
+        facebook_container.setVisibility(View.GONE);
+        PrefUtils.setSharedPreference(this, "weatherFlag", false);
+        PrefUtils.setSharedPreference(this, "facebookFlag", false);
         switch (command.toLowerCase().split(" ")[0]) {
             case "get":
             case "give":
                 switch (command.toLowerCase().substring(command.indexOf(' ') + 1)) {
+                    case "me the weather for my location":
+                        PrefUtils.setSharedPreference(this, "weatherFlag", true);
                     case "me my location":
                         getPresenter().askForLocation();
                         break;
@@ -246,10 +274,18 @@ public class MainActivity extends BaseActivity<Contract.ContractPresenter> imple
                         getPresenter().askForIpAddress(true, txtSpeechInput);
                         break;
                     case "me my facebook details":
+                        PrefUtils.setSharedPreference(this, "facebookFlag", true);
                         getPresenter().getFacebookDetails();
                         break;
                     default:
+                        intentManager.searchOnGoogle(this, command);
                         break;
+                }
+                break;
+            case "weather":
+                if (command.toLowerCase().substring(command.indexOf(' ') + 1) != null &&
+                        !command.toLowerCase().substring(command.indexOf(' ') + 1).isEmpty()) {
+                    getPresenter().getWeatherByCity(command.toLowerCase().substring(command.indexOf(' ') + 1), getString(R.string.weather_appid), "metric");
                 }
                 break;
             case "shutdown":
@@ -258,30 +294,31 @@ public class MainActivity extends BaseActivity<Contract.ContractPresenter> imple
             case "open":
                 switch (command.toLowerCase().substring(command.indexOf(' ') + 1).split(" ",2)[0]) {
                     case "camera":
-                        getPresenter().openCamera(this);
+                        intentManager.openCamera(this);
                         break;
                     case "sms":
                         int i = command.split(" ").length;
 
                         if (i != 2) {
                             String s = command.toLowerCase().split(" ",3)[2];
-                            getPresenter().sendMessage(this,s);
+                            intentManager.sendMessage(this,s);
                         } else {
-                            getPresenter().openSMS(this);
+                            intentManager.openSMS(this);
                         }
                         break;
-                    case "music player":
-                        getPresenter().openMusicPlayer(this);
+                    case "music":
+                        intentManager.openMusicPlayer(this);
                         break;
                     case "dialler":
-                        getPresenter().openDialer(this);
+                        intentManager.openDialer(this);
+                        break;
+                    case "email":
+                        intentManager.goToEmail(this);
                         break;
                     default:
+                        intentManager.searchOnGoogle(this, command);
                         break;
                 }
-                break;
-            case "facebook":
-                getPresenter().getFacebookDetails();
                 break;
             case "call":
                 PrefUtils.setSharedPreference(this, PrefUtils.COMMAND, command);
@@ -332,6 +369,7 @@ public class MainActivity extends BaseActivity<Contract.ContractPresenter> imple
     @Override
     public void changeAddressVisibility(int visibility) {
         facebook_container.setVisibility(View.GONE);
+        weatherContainer.setVisibility(View.GONE);
         addressValue.setVisibility(visibility);
         addressValue.setText("Address not detected yet!");
     }
@@ -340,9 +378,29 @@ public class MainActivity extends BaseActivity<Contract.ContractPresenter> imple
     public void setFacebookDetails(FacebookDetails facebookDetails) {
         facebook_container.setVisibility(View.VISIBLE);
         addressValue.setVisibility(View.GONE);
+        weatherContainer.setVisibility(View.GONE);
         profile_name.setText(facebookDetails.getName());
         email_address.setText(facebookDetails.getEmail());
         number_of_friends.setText("Friends: " + String.valueOf(facebookDetails.getNumber_of_friends()));
+    }
+
+    @Override
+    public void setWeatherValues(ResponseWeather responseWeather) {
+        facebook_container.setVisibility(View.GONE);
+        addressValue.setVisibility(View.GONE);
+        weatherContainer.setVisibility(View.VISIBLE);
+
+        if (responseWeather != null) {
+            description.setText("Description: " + responseWeather.getWeather().get(0).getDescription());
+            temperature.setText("Temperature: " + String.valueOf(responseWeather.getMain().getTemp()) + " °C");
+            pressure.setText("Pressure: " + String.valueOf(responseWeather.getMain().getPressure()) + " hPa");
+            wind.setText("Wind: " + String.valueOf(responseWeather.getWind().getSpeed()) + " m/s");
+        } else {
+            description.setText("Description: Not found");
+            temperature.setText("Temperature: Not found");
+            pressure.setText("Pressure: Not found");
+            wind.setText("Wind: Not found");
+        }
     }
 
     @SuppressLint("MissingPermission")

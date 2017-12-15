@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.provider.ContactsContract;
+import android.provider.MediaStore;
 import android.provider.Settings;
 import android.speech.RecognizerIntent;
 import android.support.v4.app.ActivityCompat;
@@ -31,6 +32,7 @@ public class IntentManager {
     public static final int REQ_PERMISSION_CONTACTS = 105;
     public static final int RESULT_ACTION_PICK = 104;
     public static final int RECOVERY_REQUEST = 1;
+    public static final int REQUEST_IMAGE_CAPTURE = 7;
 
     public void callIntent(Context mContext, String phoneNumber) {
         Intent phoneIntent = new Intent(Intent.ACTION_DIAL, Uri.fromParts("tel", phoneNumber, null));
@@ -135,5 +137,45 @@ public class IntentManager {
         intent.putExtra("query", query);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         mContext.startActivity(intent);
+    }
+
+    public void openSMS(Activity activity) {
+        Intent sendIntent = new Intent(Intent.ACTION_VIEW);
+        sendIntent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        sendIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        sendIntent.setData(Uri.parse("sms:"));
+        activity.getApplicationContext().startActivity(sendIntent);
+    }
+
+    public void sendMessage(Activity activity, String s) {
+        Intent sendIntent = new Intent(Intent.ACTION_VIEW);
+        sendIntent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        sendIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        sendIntent.setData(Uri.parse("sms:"));
+        sendIntent.putExtra("sms_body", s);
+        activity.getApplicationContext().startActivity(sendIntent);
+    }
+
+    public void openMusicPlayer(Activity activity) {
+        Intent musicIntent = new Intent("android.intent.action.MUSIC_PLAYER");
+        musicIntent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        musicIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        activity.getApplicationContext().startActivity(musicIntent);
+    }
+
+    public void openDialer(Activity activity) {
+        Intent dialerIntent = new Intent(Intent.ACTION_DIAL);
+        dialerIntent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        dialerIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        activity.getApplicationContext().startActivity(dialerIntent);
+    }
+
+    public void openCamera(Activity activity) {
+        Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        takePictureIntent.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        takePictureIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        if (takePictureIntent.resolveActivity(activity.getPackageManager()) != null) {
+            activity.startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
+        }
     }
 }

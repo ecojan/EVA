@@ -3,6 +3,8 @@ package com.mps.esteban.dagger;
 import android.content.Context;
 import android.os.Handler;
 
+import com.mps.esteban.retrofit.ApiCall;
+import com.mps.esteban.retrofit.ApiFactory;
 import com.mps.esteban.utils.IntentManager;
 
 import javax.inject.Singleton;
@@ -23,6 +25,12 @@ public class AppModule {
     public AppModule() {
         intentManager = new IntentManager();
         handler = new Handler();
+    }
+
+    @Provides
+    @Singleton
+    public ApiCall providesApiService(){
+        return ApiFactory.createApiService("http://api.openweathermap.org/");
     }
 
     @Provides

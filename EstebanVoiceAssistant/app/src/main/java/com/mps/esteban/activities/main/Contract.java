@@ -9,6 +9,7 @@ import android.support.annotation.NonNull;
 import android.widget.TextView;
 
 import com.mps.esteban.forms.FacebookDetails;
+import com.mps.esteban.forms.ResponseWeather;
 import com.mps.esteban.mvp.BaseContract;
 
 import java.util.List;
@@ -22,7 +23,7 @@ class Contract {
     public interface ContractView extends BaseContract.ContractView {
         void showPermissionsAlert(int permissionsType, final List<String> listPermissions);
         void showSettingsAlert();
-        void setAddress(String address);
+        void setAddress(String address, double lat, double lon, String cityName);
         void processCommand(String command);
         void openCallIntent(String phoneNumber);
         void setSpeechInput(String input);
@@ -30,6 +31,7 @@ class Contract {
         void callCommand();
         void changeAddressVisibility(int visibility);
         void setFacebookDetails(FacebookDetails facebookDetails);
+        void setWeatherValues(ResponseWeather responseWeather);
     }
 
     public interface ContractPresenter extends BaseContract.ContractPresenter {
@@ -39,14 +41,11 @@ class Contract {
         void askForTime(TextView resultData);
         BroadcastReceiver askForBattery(Context context, TextView resultData);
         void askForIpAddress(boolean IPv4, TextView resultData);
-        void openCamera(Activity activity);
-        void openSMS(Activity activity);
-        void sendMessage(Activity activity, String s);
-        void openMusicPlayer(Activity activity);
-        void openDialer(Activity activity);
         void disconnectGoogleApiClient();
         void askForCallIntent();
         void getFacebookDetails();
+        void getWeatherByCity(String cityName, String appid, String metric);
+        void getWeatherByLatLon(double lat, double lon, String appid, String metric);
     }
 
 }
