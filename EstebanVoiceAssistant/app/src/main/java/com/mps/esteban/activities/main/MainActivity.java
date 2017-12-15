@@ -315,6 +315,15 @@ public class MainActivity extends BaseActivity<Contract.ContractPresenter> imple
                     case "email":
                         intentManager.goToEmail(this);
                         break;
+                    case "maps":
+                        intentManager.openGoogleMaps(this);
+                        break;
+                    case "facebook":
+                        intentManager.openFacebook(this);
+                        break;
+                    case "youtube":
+                        intentManager.openYoutubeIntent(this, null);
+                        break;
                     default:
                         intentManager.searchOnGoogle(this, command);
                         break;
@@ -330,7 +339,7 @@ public class MainActivity extends BaseActivity<Contract.ContractPresenter> imple
                         intentManager.openYoutubeIntent(this, command.toLowerCase()
                                 .substring(command.indexOf(" ", command.indexOf(" ") + 1)));
                         break;
-                    case "open":
+                    case "video":
                         intentManager.openYoutubeActivity(this);
                         break;
                 }

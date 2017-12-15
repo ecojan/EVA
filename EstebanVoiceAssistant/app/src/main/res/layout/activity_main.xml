@@ -12,8 +12,8 @@
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="48dp"
-        android:inputType="textCapSentences"
-        android:lines="2"
+        android:gravity="center_horizontal"
+        android:inputType="textCapSentences|textMultiLine"
         android:textColor="@color/white"
         android:textSize="26sp"
         android:textStyle="normal" />

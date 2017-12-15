@@ -5,6 +5,7 @@ import android.app.SearchManager;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.provider.ContactsContract;
 import android.provider.MediaStore;
@@ -33,6 +34,22 @@ public class IntentManager {
     public static final int RESULT_ACTION_PICK = 104;
     public static final int RECOVERY_REQUEST = 1;
     public static final int REQUEST_IMAGE_CAPTURE = 7;
+    public static String FACEBOOK_URL = "https://www.facebook.com/YourPageName";
+
+    //method to get the right URL to use in the intent
+    public String getFacebookPageURL(Context context) {
+        PackageManager packageManager = context.getPackageManager();
+        try {
+            int versionCode = packageManager.getPackageInfo("com.facebook.katana", 0).versionCode;
+            if (versionCode >= 3002850) { //newer versions of fb app
+                return "fb://facewebmodal/f";
+            } else { //older versions of fb app
+                return "fb://page";
+            }
+        } catch (PackageManager.NameNotFoundException e) {
+            return FACEBOOK_URL; //normal web url
+        }
+    }
 
     public void callIntent(Context mContext, String phoneNumber) {
         Intent phoneIntent = new Intent(Intent.ACTION_DIAL, Uri.fromParts("tel", phoneNumber, null));
@@ -52,6 +69,19 @@ public class IntentManager {
         emailIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, "My Email Subject");
         emailIntent.putExtra(android.content.Intent.EXTRA_TEXT, "My email content");
         mContext.startActivity(Intent.createChooser(emailIntent, "Send mail using..."));
+    }
+
+    public void openGoogleMaps(Context mContext) {
+        Intent mapIntent = new Intent(Intent.ACTION_VIEW);
+        mapIntent.setPackage("com.google.android.apps.maps");
+        mContext.startActivity(mapIntent);
+    }
+
+    public void openFacebook(Context mContext) {
+        Intent facebookIntent = new Intent(Intent.ACTION_VIEW);
+        String facebookUrl = getFacebookPageURL(mContext);
+        facebookIntent.setData(Uri.parse(facebookUrl));
+        mContext.startActivity(facebookIntent);
     }
 
     public void openLocationSettings(Context mContext) {
@@ -134,7 +164,8 @@ public class IntentManager {
     public void openYoutubeIntent(Context mContext, String query) {
         Intent intent = new Intent(Intent.ACTION_SEARCH);
         intent.setPackage("com.google.android.youtube");
-        intent.putExtra("query", query);
+        if (query != null)
+            intent.putExtra("query", query);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         mContext.startActivity(intent);
     }
