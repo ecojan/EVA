@@ -1,4 +1,4 @@
-package com.mps.esteban.activities;
+package com.mps.esteban.activities.main;
 
 import android.app.Activity;
 import android.content.BroadcastReceiver;

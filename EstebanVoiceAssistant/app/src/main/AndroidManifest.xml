@@ -42,7 +42,7 @@
             android:exported="true"/>
 
         <activity
-            android:name="com.mps.esteban.activities.MainActivity"
+            android:name="com.mps.esteban.activities.main.MainActivity"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar"
             android:screenOrientation="portrait">
             <intent-filter>
@@ -50,6 +50,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name="com.mps.esteban.activities.youtube.YoutubeActivity"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+            android:screenOrientation="landscape">
+        </activity>
+
     </application>
 
 </manifest>

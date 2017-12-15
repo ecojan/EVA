@@ -1,45 +1,24 @@
-package com.mps.esteban.activities;
+package com.mps.esteban.activities.main;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.SearchManager;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 
-import android.content.ActivityNotFoundException;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
-import android.location.Address;
-import android.location.Geocoder;
-import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
-import android.net.Uri;
-import android.os.AsyncTask;
-import android.os.BatteryManager;
 import android.os.Bundle;
-import android.provider.Settings;
-import android.speech.RecognizerIntent;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageButton;
 import android.widget.TextView;
-import android.widget.Toast;
-import android.support.v7.app.AppCompatActivity;
 
 import com.facebook.AccessToken;
 import com.facebook.AccessTokenTracker;
@@ -47,12 +26,8 @@ import com.facebook.CallbackManager;
 import com.facebook.FacebookCallback;
 import com.facebook.FacebookException;
 import com.facebook.FacebookSdk;
-import com.facebook.appevents.AppEventsLogger;
 import com.facebook.login.LoginManager;
 import com.facebook.login.LoginResult;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.location.LocationRequest;
-import com.google.android.gms.location.LocationServices;
 import com.mps.esteban.R;
 import com.mps.esteban.application.MyApplication;
 import com.mps.esteban.forms.FacebookDetails;
@@ -269,6 +244,10 @@ public class MainActivity extends BaseActivity<Contract.ContractPresenter> imple
                     case "me the ip address":
                         /*true for IPv4, false for IPv6*/
                         getPresenter().askForIpAddress(true, txtSpeechInput);
+                        break;
+                    case "me my facebook details":
+                        getPresenter().getFacebookDetails();
+                        break;
                     default:
                         break;
                 }
@@ -307,6 +286,17 @@ public class MainActivity extends BaseActivity<Contract.ContractPresenter> imple
             case "call":
                 PrefUtils.setSharedPreference(this, PrefUtils.COMMAND, command);
                 getPresenter().askForCallIntent();
+                break;
+            case "youtube":
+                switch (command.toLowerCase().split(" ")[1]) {
+                    case "search":
+                        intentManager.openYoutubeIntent(this, command.toLowerCase()
+                                .substring(command.indexOf(" ", command.indexOf(" ") + 1)));
+                        break;
+                    case "open":
+                        intentManager.openYoutubeActivity(this);
+                        break;
+                }
                 break;
             default:
                 intentManager.searchOnGoogle(this, command);

@@ -13,6 +13,7 @@ import android.support.v4.app.ActivityCompat;
 import android.widget.Toast;
 
 import com.mps.esteban.R;
+import com.mps.esteban.activities.youtube.YoutubeActivity;
 
 import java.net.URLEncoder;
 import java.util.List;
@@ -29,6 +30,7 @@ public class IntentManager {
     public static final int REQ_PERMISSION_LOCATION = 103;
     public static final int REQ_PERMISSION_CONTACTS = 105;
     public static final int RESULT_ACTION_PICK = 104;
+    public static final int RECOVERY_REQUEST = 1;
 
     public void callIntent(Context mContext, String phoneNumber) {
         Intent phoneIntent = new Intent(Intent.ACTION_DIAL, Uri.fromParts("tel", phoneNumber, null));
@@ -115,10 +117,23 @@ public class IntentManager {
         mContext.startActivity(i);
     }
 
-    public void openMaps(Context mContext, String address) {
-        Intent addressIntent = new Intent(Intent.ACTION_VIEW,
-                Uri.parse(String.format("geo:0,0?q=%s",
-                        URLEncoder.encode(address))));
-        mContext.startActivity(addressIntent);
+//    public void openMaps(Context mContext, String address) {
+//        Intent addressIntent = new Intent(Intent.ACTION_VIEW,
+//                Uri.parse(String.format("geo:0,0?q=%s",
+//                        URLEncoder.encode(address))));
+//        mContext.startActivity(addressIntent);
+//    }
+
+    public void openYoutubeActivity(Context mContext) {
+        Intent intent = new Intent(mContext, YoutubeActivity.class);
+        mContext.startActivity(intent);
+    }
+
+    public void openYoutubeIntent(Context mContext, String query) {
+        Intent intent = new Intent(Intent.ACTION_SEARCH);
+        intent.setPackage("com.google.android.youtube");
+        intent.putExtra("query", query);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        mContext.startActivity(intent);
     }
 }

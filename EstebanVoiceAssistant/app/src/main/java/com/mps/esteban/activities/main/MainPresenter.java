@@ -1,4 +1,4 @@
-package com.mps.esteban.activities;
+package com.mps.esteban.activities.main;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -6,7 +6,6 @@ import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.location.Address;
@@ -15,7 +14,6 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.BatteryManager;
 import android.os.Bundle;
 import android.os.Handler;
@@ -25,7 +23,6 @@ import android.speech.RecognizerIntent;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
-import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
@@ -41,8 +38,6 @@ import com.mps.esteban.forms.FacebookDetails;
 import com.mps.esteban.mvp.BasePresenter;
 import com.mps.esteban.utils.IntentManager;
 
-import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -58,8 +53,6 @@ import java.util.Locale;
 
 import javax.inject.Inject;
 
-import static com.mps.esteban.R.id.txtSpeechInput;
-
 
 /**
  * Created by cosmin on 30.11.2017.
@@ -67,8 +60,7 @@ import static com.mps.esteban.R.id.txtSpeechInput;
 
 public class MainPresenter extends BasePresenter<Contract.ContractView> implements Contract.ContractPresenter, LocationListener {
 
-    @Inject
-    Handler handler;
+    @Inject Handler handler;
 
     private LocationRequest gmsRequest;
     private String disabledProviders = "";
