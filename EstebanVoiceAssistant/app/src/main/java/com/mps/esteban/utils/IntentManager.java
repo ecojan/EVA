@@ -149,12 +149,13 @@ public class IntentManager {
         mContext.startActivity(i);
     }
 
-//    public void openMaps(Context mContext, String address) {
-//        Intent addressIntent = new Intent(Intent.ACTION_VIEW,
-//                Uri.parse(String.format("geo:0,0?q=%s",
-//                        URLEncoder.encode(address))));
-//        mContext.startActivity(addressIntent);
-//    }
+    public void openMapsDirections(Context mContext, float lat, float lon) {
+        String geolocation = String.valueOf(lat) + "," + String.valueOf(lon);
+        Intent addressIntent = new Intent(Intent.ACTION_VIEW,
+                Uri.parse(String.format("google.navigation:q=%s",
+                        URLEncoder.encode(geolocation))));
+        mContext.startActivity(addressIntent);
+    }
 
     public void openYoutubeActivity(Context mContext) {
         Intent intent = new Intent(mContext, YoutubeActivity.class);

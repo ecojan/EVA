@@ -11,6 +11,10 @@ import java.util.List;
 
 public class ResponseWeather {
 
+    @SerializedName("coord")
+    @Expose
+    private Coordinates coordinates;
+
     @SerializedName("id")
     @Expose
     private int id;
@@ -34,6 +38,14 @@ public class ResponseWeather {
     @SerializedName("wind")
     @Expose
     private Wind wind;
+
+    public Coordinates getCoordinates() {
+        return coordinates;
+    }
+
+    public void setCoordinates(Coordinates coordinates) {
+        this.coordinates = coordinates;
+    }
 
     public Wind getWind() {
         return wind;

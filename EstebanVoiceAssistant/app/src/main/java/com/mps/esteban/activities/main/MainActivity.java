@@ -30,6 +30,7 @@ import com.facebook.login.LoginManager;
 import com.facebook.login.LoginResult;
 import com.mps.esteban.R;
 import com.mps.esteban.application.MyApplication;
+import com.mps.esteban.forms.Coordinates;
 import com.mps.esteban.forms.FacebookDetails;
 import com.mps.esteban.forms.ResponseWeather;
 import com.mps.esteban.mvp.BaseActivity;
@@ -75,6 +76,7 @@ public class MainActivity extends BaseActivity<Contract.ContractPresenter> imple
     @Inject
     IntentManager intentManager;
 
+    Coordinates cityCoordinatesWeather = null;
     AccessToken mAccessToken;
     AccessTokenTracker accessTokenTracker;
     CallbackManager mCallbackManager;
@@ -142,7 +144,7 @@ public class MainActivity extends BaseActivity<Contract.ContractPresenter> imple
 //        LoginManager.getInstance().logInWithPublishPermissions(this, Arrays.asList("manage_notifications"));
     }
 
-    @OnClick(value = {R.id.activity_main_mexican_btn, R.id.addressValue})
+    @OnClick(value = {R.id.activity_main_mexican_btn, R.id.addressValue, R.id.weatherContainer})
     public void onSelectEntry(View view) {
         switch (view.getId()) {
             case R.id.activity_main_mexican_btn:
@@ -150,6 +152,11 @@ public class MainActivity extends BaseActivity<Contract.ContractPresenter> imple
                 break;
             case R.id.addressValue:
                 intentManager.openMapWithCurrentLocation(this, addressValue.getText().toString());
+                break;
+            case R.id.weatherContainer:
+                if (cityCoordinatesWeather != null) {
+                    intentManager.openMapsDirections(this, cityCoordinatesWeather.getLat(), cityCoordinatesWeather.getLon());
+                }
                 break;
             default:
                 break;
@@ -401,11 +408,13 @@ public class MainActivity extends BaseActivity<Contract.ContractPresenter> imple
         weatherContainer.setVisibility(View.VISIBLE);
 
         if (responseWeather != null) {
+            cityCoordinatesWeather = responseWeather.getCoordinates();
             description.setText("Description: " + responseWeather.getWeather().get(0).getDescription());
             temperature.setText("Temperature: " + String.valueOf(responseWeather.getMain().getTemp()) + " °C");
             pressure.setText("Pressure: " + String.valueOf(responseWeather.getMain().getPressure()) + " hPa");
             wind.setText("Wind: " + String.valueOf(responseWeather.getWind().getSpeed()) + " m/s");
         } else {
+            cityCoordinatesWeather = null;
             description.setText("Description: Not found");
             temperature.setText("Temperature: Not found");
             pressure.setText("Pressure: Not found");
